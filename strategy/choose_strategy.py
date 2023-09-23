@@ -1,5 +1,6 @@
 from strategy.random_strategy import RandomStrategy
 from strategy.simple_human_strategy import SimpleHumanStrategy
+from strategy.simple_zombie_mod import SimpleZombieModification
 from strategy.simple_zombie_strategy import SimpleZombieStrategy
 from strategy.base_zombie_strategy import BaseZombieStrategy
 from strategy.strategy import Strategy
@@ -11,6 +12,6 @@ def choose_strategy(is_zombie: bool) -> Strategy:
     #
     # For example:
     if is_zombie:
-        return BaseZombieStrategy()
+        return SimpleZombieModification()
     else:
         return SimpleHumanStrategy()

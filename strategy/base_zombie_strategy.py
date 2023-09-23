@@ -30,7 +30,7 @@ class BaseZombieStrategy(Strategy):
         # game_state[character_ids[0]]
 
         # GET ALL MOVES FOR A CHARACTER_ID
-
+        already_targeted_human_ids = [] 
         counter: int = 0  # counter for spliting zombies
         for [character_id, moves] in possible_moves.items():
             if len(moves) == 0:  # No choices... Next!
@@ -71,7 +71,7 @@ class BaseZombieStrategy(Strategy):
                 characters = game_state.characters.values()
                 humans = filter(lambda c: not c.is_zombie, characters)
                 # sort humans by class type where self.hitlist() is the priority
-                humans = sorted(humans, key=lambda h: self.hitlist()[::-1].index(h.class_type))
+                #humans = sorted(humans, key=lambda h: self.hitlist()[::-1].index(h.class_type))
                 #print(f"humans sorted: {humans}")
                 # sort characters by health, lowest health first
                 humans = sorted(humans, key=lambda h: h.health)
@@ -81,16 +81,21 @@ class BaseZombieStrategy(Strategy):
                     humans, key=lambda h: self.manhattan_distance(h.position, current_pos))[0]
 
                 # reverse the hitlist so that we target the weakest first
-                hitlistWeak = self.hitlist()[::-1]
+                hitlistWeak = self.hitlist()
                 hitlistWeak.pop()
                 # create a list of already targeted humans so multiple zombies don't chase the same human
-                already_targeted_human_ids = []                # priority: little distance, little health (sorted), weak class_type
+                               # priority: little distance, little health (sorted), weak class_type
                 for c in humans:
+                    # if there are less than 7 humans left, reset the already_targeted_human_ids list so we can swarm humans
+                    if len(humans) < 7:
+                         already_targeted_human_ids = []
                     distance = self.manhattan_distance(
                         c.position, current_pos)
                     if distance <= 6:
                        # for h in hitlistWeak:
                            # if c.class_type == h:
+                                print(f"already targeted: {already_targeted_human_ids}")
+                           
                                 if c.id in already_targeted_human_ids:
                                     print(f"already targeted: {c.id}")
                                     print(f"already targeted: {already_targeted_human_ids}")
@@ -216,4 +221,4 @@ class BaseZombieStrategy(Strategy):
                          CharacterClassType.DEMOLITIONIST,
                          CharacterClassType.NORMAL]
 
-        return hitlist
+        return hitlist[::-1]

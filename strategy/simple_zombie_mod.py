@@ -11,7 +11,7 @@ from game.character.action.attack_action_type import AttackActionType
 from strategy.strategy import Strategy
 
 
-class SimpleZombieStrategy(Strategy):
+class SimpleZombieModification(Strategy):
 
     def decide_moves(
             self, 
@@ -20,9 +20,12 @@ class SimpleZombieStrategy(Strategy):
             ) -> list[MoveAction]:
         
         choices = []
+        already_attacked_humans = []
+
         for [character_id, moves] in possible_moves.items():
             if len(moves) == 0:  # No choices... Next!
                 continue
+
 
             pos = game_state.characters[character_id].position  # position of the zombie
             closest_human_pos = pos  # default position is zombie's pos
@@ -30,13 +33,19 @@ class SimpleZombieStrategy(Strategy):
 
             # Iterate through every human to find the closest one
             for c in game_state.characters.values():
+                characters = game_state.characters.values()
+                # get characters that are humans
+                humans = [c for c in characters if not c.is_zombie]
+                if len(humans) < 7:
+                    already_attacked_humans = []
                 if c.is_zombie:
                     continue  # Fellow zombies are frens :D, ignore them
 
                 distance = abs(c.position.x - pos.x) + abs(c.position.y - pos.y) # calculate manhattan distance between human and zombie
-                if distance < closest_human_distance:  # If distance is closer than current closest, replace it!
+                if distance < closest_human_distance and c.id not in already_attacked_humans:  # If distance is closer than current closest, replace it!
                     closest_human_pos = c.position
                     closest_human_distance = distance
+                    already_attacked_humans.append(c.id)
 
             # Move as close to the human as possible
             move_distance = 1337  # Distance between the move action's destination and the closest human
@@ -48,7 +57,7 @@ class SimpleZombieStrategy(Strategy):
                 if distance < move_distance:  
                     move_distance = distance
                     move_choice = m
-
+            print(f"move_choice: {move_choice}")
             choices.append(move_choice)  # add the choice to the list
 
         return choices
@@ -71,9 +80,11 @@ class SimpleZombieStrategy(Strategy):
             for a in attacks:
                 if a.type is AttackActionType.CHARACTER:
                     humans.append(a)
-
+                    
+            # sort characters by health, lowest health first
+            humans = sorted(humans, key=lambda h: game_state.characters[h.attacking_id].health)
             if humans:  # Attack a random human in range
-                choices.append(random.choice(humans))
+                choices.append(humans[0])
             else:  # No humans? Shame. The targets in range must be terrain. May as well attack one.
                 choices.append(random.choice(attacks))
 
