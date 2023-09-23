@@ -94,11 +94,11 @@ class BaseZombieStrategy(Strategy):
                     if distance <= 6:
                        # for h in hitlistWeak:
                            # if c.class_type == h:
-                                print(f"already targeted: {already_targeted_human_ids}")
+                                # print(f"already targeted: {already_targeted_human_ids}")
                            
                                 if c.id in already_targeted_human_ids:
-                                    print(f"already targeted: {c.id}")
-                                    print(f"already targeted: {already_targeted_human_ids}")
+                                    # print(f"already targeted: {c.id}")
+                                    # print(f"already targeted: {already_targeted_human_ids}")
                                     continue
                                 move_choice = self.move_to_destination(
                                     c.position, current_pos, moves)
