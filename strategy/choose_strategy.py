@@ -13,4 +13,4 @@ def choose_strategy(is_zombie: bool) -> Strategy:
         return SimpleZombieModification()
     else:
         #return BaseHumanStrategy()
-        return StunlockHumanStrategy()
+        return BaseHumanStrategy()
