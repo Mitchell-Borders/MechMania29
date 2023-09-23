@@ -6,6 +6,7 @@ from game.game_state import GameState
 from game.character.action.attack_action_type import AttackActionType
 from game.character.character_class_type import CharacterClassType
 from game.character.character import Character
+from game.util.position import Position
 from strategy.strategy import Strategy
 
 
@@ -22,46 +23,57 @@ class BaseZombieStrategy(Strategy):
         # SIMPLE ZOMBIE STRATEGY FOR MOVEMENT, CHANGE!!
 
         choices = []
+        
+        # character_ids = []
+        # for character_id, moves in possible_moves.items():
+        #     if character_id not in character_ids:
+        #         character_ids.append(character_ids)
+        # game_state[character_ids[0]]
 
+        # GET ALL MOVES FOR A CHARACTER_ID
+        
+        counter: int = 0 # counter for spliting zombies
         for [character_id, moves] in possible_moves.items():
             if len(moves) == 0:  # No choices... Next!
                 continue
+            #print(f"character_id:{character_id}   Moves: {moves}")
+            current_pos = game_state.characters[character_id].position # position of current zombie
+            # Set positions for starting SPLIT STRAT
+            middle_left_pos = Position(35, 50)
+            middle_right_pos = Position(65, 50)
+            top_middle_pos = Position(50, 30)
 
-            pos = game_state.characters[character_id].position  # position of the zombie
-            closest_human_pos = pos  # default position is zombie's pos
-            closest_human_distance = 1984  # large number, map isn't big enough to reach this distance
+            # SPLIT STRAT - DON'T TARGET TRACERS
+            if game_state.turn < 30:
+                # Split to middle left for first two zombies
+                if counter <= 1:
+                    move_choice = self.move_to_destination(middle_left_pos, current_pos, moves)
+                    choices.append(move_choice)
 
-            # Iterate through every human to find the closest one
-            for c in game_state.characters.values():
-                if c.is_zombie:
-                    continue  # Fellow zombies are frens :D, ignore them
+                # Split to top middle for third zombie
+                elif counter == 2:
+                    move_choice = self.move_to_destination(top_middle_pos, current_pos, moves)
+                    choices.append(move_choice)
 
-                distance = abs(c.position.x - pos.x) + abs(c.position.y - pos.y) # calculate manhattan distance between human and zombie
-                if distance < closest_human_distance:  # If distance is closer than current closest, replace it!
-                    closest_human_pos = c.position
-                    closest_human_distance = distance
+                # Split to middle right for last two zombies
+                elif counter >= 3 and counter <= 4:
+                    move_choice = self.move_to_destination(middle_right_pos, current_pos, moves)
+                    choices.append(move_choice)
 
-            # Move as close to the human as possible
-            move_distance = 1337  # Distance between the move action's destination and the closest human
-            move_choice = moves[0]  # The move action the zombie will be taking
-            for m in moves:
-                distance = abs(m.destination.x - closest_human_pos.x) + abs(m.destination.y - closest_human_pos.y)  # calculate manhattan distance
-
-                # If distance is closer, that's our new choice!
-                if distance < move_distance:  
-                    move_distance = distance
-                    move_choice = m
-
-            choices.append(move_choice)  # add the choice to the list
-
+            # TARGET WEAK STRAT
+            else:
+                pass
+                
+            counter += 1
         return choices
+
 
     def decide_attacks(
             self, 
             possible_attacks: dict[str, list[AttackAction]], 
             game_state: GameState
             ) -> list[AttackAction]:
-
+        
         choices = [] # our attack
         # Iterates over a single zombie's possible attacks
         #NEED TO DO:
@@ -69,22 +81,6 @@ class BaseZombieStrategy(Strategy):
         for [character_id, attacks] in possible_attacks.items():
             if len(attacks) == 0:
                 continue
-            
-            # humans = []  # holds humans that are in range
-            
-            
-            # # Gather list of humans in range
-            # for a in attacks:
-            #     if a.type is AttackActionType.CHARACTER:
-            #         humans.append(a)
-            #         human = game_state.characters[a.attacking_id]
-
-            # for a in attacks:
-            #     if a.attacking_id == human.id:
-            #         choices.append(a)
-
-            # # Initialize a list of what we can attack
-            # attackList : game_state.characters.values() = []
 
             # Generate hitlist
             hitlist = self.hitlist()
@@ -115,45 +111,27 @@ class BaseZombieStrategy(Strategy):
             elif(len(choices) == 0):  # The targets in range must be terrain. May as well attack one.
                 choices.append(random.choice(attacks))
             
-            
-            # # Iterate and get all characters in game_state
-            # for i in game_state.characters.values():
-                
-            #     # For all in chev distance, append it to the attackList
-            #     for x in range(-1, 2):
-            #          for y in range(-1, 2):
-            #             self.find_attack(i, x, y, game_state, character_id, attackList)
-
-            # Choice who to attack based on health and class type, prioritizing people with low hitpoints, then
-            # Tracuers, Medics, Marksmen, etc.
-            # if not len(attackList) == 0: # // attack a target with regards to class and hitpoint
-            #      for x in attackList:
-            #           for h in hitlist:
-            #                if x.class_type == h:
-            #                     if x.health == 1:
-            #                          choices.append(AttackAction(character_id, x.id))
-            #                          break
-            #      if len(choices) == 0: # // attack a target indiscrimate of hit points
-            #         for x in attackList:
-            #             for h in hitlist:
-            #                 if x.class_type == h:
-            #                      choices.append(AttackAction(character_id, x.id))
-            #                      break
-            # elif(len(choices) == 0):  # The targets in range must be terrain. May as well attack one.
-            #     choices.append(random.choice(attacks))
-        # print("____________________________________________________________________________")
-        # print("Choices: " + choices)
-        # print("Humans: " + humans)
-        # print("AttackList: " + attackList)
-        # print('End of decide attacks')
         return choices
     
     # Calculate manhattan_distance for movement
-    def manhattan_distance(self, target, pos) -> int:
-        distance = abs(target.position.x - pos.x) + abs(target.position.y - pos.y)
+    def manhattan_distance(self, target_pos: Position, current_pos: Position) -> int:
+        distance = abs(target_pos.x - current_pos.x) + abs(target_pos.y - current_pos.y)
 
         return distance
     
+
+    # Method to choose destination to move to
+    def move_to_destination(self, target_pos: Position, current_pos: Position, moves: list[MoveAction]) -> MoveAction:
+        move_distance = 1337
+        move_choice = moves[0]  # The move action the zombie will be taking
+        for m in moves:
+            distance = self.manhattan_distance(m.destination, target_pos)
+            # If distance is closer, that's our new choice!
+            if distance < move_distance:  
+                move_distance = distance
+                move_choice = m
+        return move_choice
+
     # Append any character that is not a zombie and is in range for attack to the list
     def find_attack(self, target, x, y, game_state, character_id, attackList):
         target.position.x = target.position.x + x
