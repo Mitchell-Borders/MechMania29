@@ -36,7 +36,7 @@ class SimpleZombieModification(Strategy):
                 characters = game_state.characters.values()
                 # get characters that are humans
                 humans = [c for c in characters if not c.is_zombie]
-                if len(humans) < 7:
+                if len(humans) < 10:
                     already_attacked_humans = []
                 if c.is_zombie:
                     continue  # Fellow zombies are frens :D, ignore them
@@ -57,7 +57,7 @@ class SimpleZombieModification(Strategy):
                 if distance < move_distance:  
                     move_distance = distance
                     move_choice = m
-            print(f"move_choice: {move_choice}")
+            #print(f"move_choice: {move_choice}")
             choices.append(move_choice)  # add the choice to the list
 
         return choices
@@ -86,6 +86,14 @@ class SimpleZombieModification(Strategy):
             if humans:  # Attack a random human in range
                 choices.append(humans[0])
             else:  # No humans? Shame. The targets in range must be terrain. May as well attack one.
-                choices.append(random.choice(attacks))
+                for a in attacks:
+                    if a.type is AttackActionType.TERRAIN:
+                        # attack the terrain with the least amount of health
+                        if game_state.terrains[a.attacking_id].health == 1:
+                            choices.append(a)
+                        elif game_state.terrains[a.attacking_id].health == 2:
+                            choices.append(a)
+                        else:
+                            choices.append(random.choice(attacks))
 
         return choices
